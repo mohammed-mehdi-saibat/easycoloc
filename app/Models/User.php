@@ -21,6 +21,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'is_banned',
+        'reputation',
     ];
 
     /**
@@ -43,6 +46,16 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_banned' => 'boolean',
+            'reputation' => 'integer',
         ];
+    }
+
+    public function colocations() {
+        return $this->belongsToMany(Colocation::class)->withPivot('role')->withTimestamps();
+    }
+
+    public function hasColocation() {
+        return $this->colocations()->exists();
     }
 }
