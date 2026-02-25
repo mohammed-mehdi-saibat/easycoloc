@@ -23,3 +23,4 @@ class CheckBanned
         return $next($request);
     }
 }
+
