@@ -21,7 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        'global_role',
         'is_banned',
         'reputation',
     ];
@@ -52,10 +52,10 @@ class User extends Authenticatable
     }
 
     public function colocations() {
-        return $this->belongsToMany(Colocation::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Colocation::class)->withPivot('role', 'left_at')->withTimestamps();
     }
 
     public function hasColocation() {
-        return $this->colocations()->exists();
+        return $this->colocations()->wherePivot('left_at', null)->exists();
     }
 }
