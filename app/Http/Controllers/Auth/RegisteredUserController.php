@@ -24,8 +24,6 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
@@ -48,6 +46,13 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        if (session()->has('pending_invite_token')) {
+            $token = session()->get('pending_invite_token');
+            session()->forget('pending_invite_token'); 
+            
+            return redirect()->route('invitations.accept', ['token' => $token]);
+        }
+
+        return redirect()->route('dashboard');
     }
 }
