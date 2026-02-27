@@ -58,4 +58,8 @@ class User extends Authenticatable
     public function hasColocation() {
         return $this->colocations()->wherePivot('left_at', null)->exists();
     }
+
+    public function activeColocation() {
+        return $this->colocations()->wherePivot('left_at', null)->first();
+    }
 }
