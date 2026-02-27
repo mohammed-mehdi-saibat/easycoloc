@@ -15,4 +15,8 @@ class Colocation extends Model
     public function owner() {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function expenses() {
+        return $this->hasMany(Expense::class);
+    }
 }
