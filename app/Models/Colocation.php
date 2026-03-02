@@ -9,7 +9,9 @@ class Colocation extends Model
     protected $fillable = ['name', 'description', 'owner_id'];
 
     public function users() {
-        return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->withPivot('role', 'left_at')
+            ->withTimestamps();
     }
 
     public function owner() {
