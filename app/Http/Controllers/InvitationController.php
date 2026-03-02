@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Colocation;
 use App\Models\Invitation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
@@ -14,22 +15,19 @@ class InvitationController extends Controller
 {
     public function send(Request $request, Colocation $colocation)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
+        $request->validate(['email' => 'required|email']);
 
         if (Auth::id() !== $colocation->owner_id) {
-            return back()->with('error', 'Unauthorized. Only the ledger owner can invite members.');
+            return back()->with('error', 'Unauthorized. Only the owner can invite.');
         }
 
         $exists = Invitation::where('colocation_id', $colocation->id)
             ->where('email', $request->email)
             ->where('accepted', false)
-            ->where('expires_at', '>', now())
             ->exists();
 
         if ($exists) {
-            return back()->with('error', 'A pending invitation already exists for this email.');
+            return back()->with('error', 'A pending invitation already exists.');
         }
 
         $invitation = Invitation::create([
@@ -40,9 +38,12 @@ class InvitationController extends Controller
             'expires_at' => now()->addDays(2),
         ]);
 
-        Mail::to($request->email)->send(new ColocationInviteMail($invitation));
+        try {
+            Mail::to($request->email)->send(new ColocationInviteMail($invitation));
+        } catch (\Exception $e) {
+        }
 
-        return back()->with('success', 'Invitation sent successfully.');
+        return back()->with('success', 'Invitation recorded! (Check DB for token if mail fails)');
     }
 
     public function accept($token)
@@ -52,24 +53,20 @@ class InvitationController extends Controller
             ->firstOrFail();
 
         if ($invitation->expires_at->isPast()) {
-            return redirect()->route('login')->with('error', 'This invitation link has expired.');
+            return redirect()->route('dashboard')->with('error', 'Invite expired.');
         }
 
         if (!Auth::check()) {
-            session(['pending_invite_token' => $token]);
-            return redirect()->route('register')
-                ->with('status', 'Please create an account to accept your invitation.');
+            return redirect()->route('register')->with('status', 'Register to accept invite.');
         }
 
-        if (Auth::user()->hasColocation()) {
-            return redirect()->route('dashboard')->with('error', 'You are already an active member of a colocation.');
+        if (Auth::user()->activeColocation()) {
+            return redirect()->route('dashboard')->with('error', 'You already have a group.');
         }
 
-        $colocation = $invitation->colocation;
-        $colocation->users()->attach(Auth::id(), ['role' => 'member']);
-        
+        $invitation->colocation->users()->attach(Auth::id(), ['role' => 'member']);
         $invitation->update(['accepted' => true]);
 
-        return redirect()->route('dashboard')->with('success', 'Welcome to ' . $colocation->name . '!');
+        return redirect()->route('dashboard')->with('success', 'Joined group!');
     }
 }
